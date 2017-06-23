@@ -26,7 +26,7 @@ Mail.defaults do
 end
 c = Connect.new
 email_address = c.emails['eres']
-email_address = c.emails['default_email']
+#email_address = c.emails['default_email']
 c.close
 
 #

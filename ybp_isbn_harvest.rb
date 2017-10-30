@@ -215,36 +215,35 @@ end
 #
 puts '..making delta files '  + Time.now.to_s
 comp_prev = []
-CSV.foreach(comp_path, :col_sep => "|") do |isbn, tag, *|
-  comp_prev << isbn
-end
 comp_new = []
-comp_new_data = []
-CSV.foreach(comp_new_path, :col_sep => "|") do |isbn, tag, *|
-  comp_new << isbn
-  comp_new_data << [isbn, tag]
+File.foreach(comp_path) do |line|
+  comp_prev << line.rstrip()
 end
+File.foreach(comp_new_path) do |line|
+  comp_new << line.rstrip()
+end
+
 comp_prev = comp_prev.compact.sort
 comp_new = comp_new.compact.sort
-comp_new_data = comp_new.compact.sort
 
 puts '..writing delta files '  + Time.now.to_s
 stat_deletes = 0
 stat_adds = 0
 File.open(deletes_path, 'w') do |delete_file|
-  comp_prev.each do |prev_isbn|
-    unless comp_new.bsearch { |x| prev_isbn <=> x }
-      delete_file << "#{prev_isbn}||303099\n"
+  comp_prev.each do |prev_line|
+    unless comp_new.bsearch { |x| prev_line <=> x }
+      delete_file << prev_line + "\n"
       stat_deletes += 1
     end
   end
 end
+
 File.open(adds_path, 'w') do |add_file|
-  comp_new_data.each do |isbn, tag|
-    unless comp_prev.bsearch { |x| isbn <=> x }
-      add_file << "#{isbn}|#{tag}|303099\n"
+  new_lines.each do |new_line|
+    unless comp_prev.bsearch { |x| new_line <=> x }
+      add_file << new_line + "\n"
       stat_adds += 1
-    end
+     end
   end
 end
 

@@ -23,10 +23,12 @@ where b.bcode3 != 'n'
               and (
                   exists (select * from sierra_view.bib_record_item_record_link bil where bil.bib_record_id = b.id)
                   or
-                  exists (select * from sierra_view.bib_record_item_record_link bil where bil.bib_record_id = b.id)
+                  exists (select * from sierra_view.bib_record_holding_record_link bhl where bhl.bib_record_id = b.id)
                   )
              )
           )
       and NOT EXISTS (select *
                       from excluded
                       where excluded.bib_id = sf.record_id)
+-- sorted input is needed by script to discard |z isbns appropriately
+order by b.id, sf.tag

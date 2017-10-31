@@ -47,7 +47,7 @@ end
 def validate_isbn(isbn)
   # checks for proper isbn structure, but not for properly calculated check digit
   # returns nil for invalid isbn
-  # returns normalized isbn for valid isbns (i.e. 10 or 13 chars of 0-9X; no spaces, hyphens, etc.)
+  # for valid isbns, returns normalized isbn (i.e. 10 or 13 chars of 0-9X; no spaces, hyphens, etc.)
   # isbn regexp from:
   # https://www.safaribooksonline.com/library/view/regular-expressions-cookbook/9781449327453/ch04s13.html
   # comment toggling would allow 9 digit SBNs, which would be prefixed with a 0 to make
@@ -100,52 +100,40 @@ end
 e_bnums = File.read(EBOOK_BNUMS_PATH).split("\n")
 e_bnums.sort!
 
-puts 'rolling all_isbns into records ' + Time.now.to_s
-records = {}
+puts 'finding normalized |a and |z isbns to include' + Time.now.to_s
+# take all |a isbns and |z isbns for ecoll records where there is no |a
+# this part relies on the sql results being sorted by record and subfield
+# indicator
+wrote_a = ''
+wrote_z = ''
 stat_isbns_found = 0
 stat_invalid_isbns = 0
-# make hash of: bib records, as hashes with tags => valid isbns
 a_isbns = Set.new()
 z_isbns = Set.new()
-IO.foreach(ALL_ISBNS_PATH) do |line|
+
+File.foreach(ALL_ISBNS_PATH) do |line|
   stat_isbns_found += 1
   bnum, tag, isbn = line.split("\t")
   isbn_normalized = normalize_isbn(isbn)
-  unless isbn_normalized
-    stat_invalid_isbns += 1
-  end
-  if e_bnums.bsearch { |x| bnum <=> x }
-    if records.include? bnum
-      records[bnum][tag.to_sym] << isbn_normalized
-    else
-      records[bnum] = {a: [], z: []}
-      records[bnum][tag.to_sym] << isbn_normalized
-    end
-  elsif tag == 'a'
+  stat_invalid_isbns += 1 unless isbn_normalized
+  if tag == 'a'
     a_isbns << isbn_normalized
+    wrote_a = bnum if isbn_normalized
+
+  # skip if we just wrote an a_isbn from this record
+  # this saves us from the e_bnums binary search.
+  elsif wrote_a == bnum
+    
+  # write if: we just wrote a z_isbn from this record
+  # or it's an ecoll record that we have not already seen with an a_isbn
+  elsif wrote_z == bnum || e_bnums.bsearch { |x| bnum <=> x }
+      z_isbns << isbn_normalized
+      wrote_z = bnum
   end
 end
-
-puts '..getting ecoll a_isbns and z_isbns ' + Time.now.to_s
-
-
-# for each ecoll bib, get 020|a; if no 020|a, get 020|z
-bnum, record = records.shift
-while record
-  if not record[:a].compact.empty?
-    record[:a].compact.each do |isbn|
-      a_isbns << isbn
-    end
-  else
-    record[:z].compact.each do |isbn|
-      z_isbns << isbn
-    end
-  end
-  bnum, record = records.shift
-end
-
 # remove anything from z_isbns if in a_isbns
 z_isbns = z_isbns - a_isbns
+
 
 #
 # Remove YBP ISBNs
@@ -176,12 +164,12 @@ ybp_vendor_isbns = nil
 ybp_ecolls_isbns = nil
 
 
-exclude_isbns.map! { |x| strip_isbn(x)}
+exclude_isbns.map! { |x| strip_isbn(x) }
 exclude_isbns = exclude_isbns.compact.uniq
 exclude_isbns.sort!
 stat_ybp_isbns_to_exclude = exclude_isbns.length
 
-puts 'finding include_isbns ' + Time.now.to_s
+puts 'excluding exclude_isbns ' + Time.now.to_s
 
 
 stat_unique_found = a_isbns.length + z_isbns.length
@@ -198,14 +186,10 @@ stat_excluded = stat_unique_found - stat_020_a - stat_020_z
 puts 'writing files '  + Time.now.to_s
 File.open(comp_new_path, 'w') do |file|
   a_isbns.each do |a_isbn|
-    if a_isbn
-      file << "#{a_isbn}||303099\n"
-    end
+    file << "#{a_isbn}||303099\n" if a_isbn
   end
   z_isbns.each do |z_isbn|
-    if z_isbn
-      file << "#{z_isbn}|ebook|303099\n"
-    end
+    file << "#{z_isbn}|ebook|303099\n" if z_isbn
   end
 end
 
@@ -272,7 +256,7 @@ stat_isbns_sent = stat_020_a + stat_020_z
 #
 puts 'sending mail'
 stat_ecoll_details = ''
-stat_ybp_ecolls_by_coll.sort_by!{ |x| x[1]}
+stat_ybp_ecolls_by_coll.sort_by! { |x| x[1]}
 stat_ybp_ecolls_by_coll.each do |coll, count|
   stat_ecoll_details += "  --#{coll}...#{count}\n"
 end
@@ -313,8 +297,6 @@ Mail.deliver do
   body     mailbody
   attachments = [adds_path, deletes_path]
   attachments.each do |filename|
-    if File.size?(filename)
-      add_file filename
-    end
+    add_file filename if File.size?(filename)
   end
 end

@@ -39,6 +39,7 @@ end
 
 def strip_isbn(isbn)
   # strips a leading isbn from an entire 020 subfield string
+  # TODO: allow prefixes like "ISBN-13: 9781231231231"
   return isbn.upcase.match(/^[- 0-9X]*/)[0].strip
 rescue NoMethodError
   return nil
@@ -50,20 +51,11 @@ def validate_isbn(isbn)
   # for valid isbns, returns normalized isbn (i.e. 10 or 13 chars of 0-9X; no spaces, hyphens, etc.)
   # isbn regexp from:
   # https://www.safaribooksonline.com/library/view/regular-expressions-cookbook/9781449327453/ch04s13.html
-  # comment toggling would allow 9 digit SBNs, which would be prefixed with a 0 to make
-  # a 10 digit ISBN
-  # Allow SBN regexp:
-  #(regexp = '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{9,10}$|(?=(?:[0-9]+[- ]){3})' +
-  #          '[- 0-9X]{12,13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)' +
-  #          '(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$')
   # Only ISBN regexp:
   (regexp = '^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})' +
             '[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)' +
             '(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$')
   isbn = isbn.match(regexp)[0]
-  #if isbn.length == 9 # allows for SBNs
-  # isbn = '0' + isbn  # allows for SBNs
-  #end                 # allows for SBNs
   return isbn.gsub('-', '').gsub(' ', '').match(/[0-9X]*$/)[0]
 rescue NoMethodError
   return nil

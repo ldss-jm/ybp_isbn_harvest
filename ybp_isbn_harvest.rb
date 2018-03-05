@@ -135,18 +135,20 @@ ybp_vendor_isbns = File.read(YBP_VENDOR_PATH).split("\n")
 stat_ybp_vendor_code = ybp_vendor_isbns.uniq.length
 ybp_ecolls_isbns = File.read(YBP_ECOLLS_PATH).split("\n")
 stat_ybp_ecolls_by_coll =
-            ybp_ecolls_isbns.group_by{
-              |x| case
-                  when x.match(/Springer/) then 'Springer'
-                  when x.match(/title-by-title/i) then 'title-by-title through YBP'
-                  when x.match(/via YBP/i) then 'title-by-title through YBP'
-                  when x.match(/ProQuest Ebook Central/) then 'YBP EBL DDA'
-                  when x.match(/EBL eBook Library DDA/) then 'YBP EBL DDA'
-                  when x.match(/Cambridge histories online/) then 'Cambridge'
-                  when x.match(/Duke University Press/) then 'Duke'
-                  end
-              }.map{ |k,v| [k, v.length]
-            }
+  ybp_ecolls_isbns.group_by{
+    |x| case
+        when x.match(/Springer/i) then 'Springer'
+        when x.match(/title-by-title/i) then 'title-by-title through YBP'
+        when x.match(/via YBP/i) then 'title-by-title through YBP'
+        when x.match(/ProQuest Ebook Central .online collection.\. DDA/i) then 'YBP EBL DDA'
+        when x.match(/ProQuest Ebook Central DDA .online collection.\./i) then 'YBP EBL DDA'
+        when x.match(/EBL eBook Library DDA/i) then 'YBP EBL DDA'
+        when x.match(/Cambridge histories online/i) then 'Cambridge'
+        when x.match(/Duke University Press/i) then 'Duke'
+        else x
+        end
+    }.map{ |k,v| [k, v.length]
+  }
 ybp_ecolls_isbns = ybp_ecolls_isbns.map{ |x| x.split("\t")[0]}
 stat_ybp_ecolls = ybp_ecolls_isbns.uniq.length
 manual_excludes = File.read(excludes_gobi_path).split("\n")
@@ -177,12 +179,8 @@ stat_excluded = stat_unique_found - stat_020_a - stat_020_z
 #
 puts 'writing files '  + Time.now.to_s
 File.open(comp_new_path, 'w') do |file|
-  a_isbns.each do |a_isbn|
-    file << "#{a_isbn}||303099\n" if a_isbn
-  end
-  z_isbns.each do |z_isbn|
-    file << "#{z_isbn}|ebook|303099\n" if z_isbn
-  end
+  a_isbns.each { |a_isbn| file << "#{a_isbn}|unc_load|303099\n" if a_isbn }
+  z_isbns.each { |z_isbn| file << "#{z_isbn}|ebook_load|303099\n" if z_isbn }
 end
 
 
@@ -192,12 +190,8 @@ end
 puts '..making delta files '  + Time.now.to_s
 comp_prev = []
 comp_new = []
-File.foreach(comp_path) do |line|
-  comp_prev << line.rstrip()
-end
-File.foreach(comp_new_path) do |line|
-  comp_new << line.rstrip()
-end
+File.foreach(comp_path) { |line| comp_prev << line.rstrip }
+File.foreach(comp_new_path) { |line| comp_new << line.rstrip }
 
 comp_prev = comp_prev.compact.sort
 comp_new = comp_new.compact.sort
@@ -215,7 +209,7 @@ File.open(deletes_path, 'w') do |delete_file|
 end
 
 File.open(adds_path, 'w') do |add_file|
-  new_lines.each do |new_line|
+  comp_new.each do |new_line|
     unless comp_prev.bsearch { |x| new_line <=> x }
       add_file << new_line + "\n"
       stat_adds += 1
@@ -223,36 +217,12 @@ File.open(adds_path, 'w') do |add_file|
   end
 end
 
-file_timestamp = Time.now.strftime("%F_%H%M%S")
-zipfile_path =  File.join(WORKDIR, "load_#{file_timestamp}.zip")
-Zip::File.open(zipfile_path, Zip::File::CREATE) do |zipfile|
-  zipfile.add('UNC-3030_ADDS_holdings_load.txt', adds_path)
-  zipfile.add('UNC-3030_DELETES_holdings_load.txt', deletes_path)
-  zipfile.add('comprehensive_new.txt', comp_new_path)
-  zipfile.add('comprehensive_prev.txt', comp_path)
-  zipfile.add('results_ebooks_bnums.txt', EBOOK_BNUMS_PATH)
-  zipfile.add('results_all_isbns.txt', ALL_ISBNS_PATH)
-  zipfile.add('results_ybp_vendor.txt', YBP_VENDOR_PATH)
-  zipfile.add('results_ybp_ecolls.txt', YBP_ECOLLS_PATH)
-end
-
-FileUtils.mv(comp_path, comp_old_path)
-FileUtils.mv(comp_new_path, comp_path)
-FileUtils.cp(zipfile_path, common_dir)
 stat_isbns_sent = stat_020_a + stat_020_z
-
-
-
-#
-# Send results by mail
-#
-puts 'sending mail'
 stat_ecoll_details = ''
 stat_ybp_ecolls_by_coll.sort_by! { |x| x[1]}
 stat_ybp_ecolls_by_coll.each do |coll, count|
   stat_ecoll_details += "  --#{coll}...#{count}\n"
 end
-
 
 mailbody = <<-EOT
 Attached are add/delete file(s) of ISBNs for the Holdings Load Service, UNC
@@ -281,6 +251,36 @@ flagged found: #{stat_020_z}
 Began: #{timestamp}
 Finished: #{Time.now.to_s}
 EOT
+
+puts mailbody
+File.write('run_stats.txt', mailbody)
+
+
+file_timestamp = Time.now.strftime("%F_%H%M%S")
+zipfile_path =  File.join(WORKDIR, "load_#{file_timestamp}.zip")
+Zip::File.open(zipfile_path, Zip::File::CREATE) do |zipfile|
+  zipfile.add('UNC-3030_ADDS_holdings_load.txt', adds_path)
+  zipfile.add('UNC-3030_DELETES_holdings_load.txt', deletes_path)
+  zipfile.add('comprehensive_new.txt', comp_new_path)
+  zipfile.add('comprehensive_prev.txt', comp_path)
+  zipfile.add('results_ebooks_bnums.txt', EBOOK_BNUMS_PATH)
+  zipfile.add('results_all_isbns.txt', ALL_ISBNS_PATH)
+  zipfile.add('results_ybp_vendor.txt', YBP_VENDOR_PATH)
+  zipfile.add('results_ybp_ecolls.txt', YBP_ECOLLS_PATH)
+  zipfile.add('run_stats.txt', 'run_stats.txt')
+end
+
+FileUtils.mv(comp_path, comp_old_path)
+FileUtils.mv(comp_new_path, comp_path)
+FileUtils.cp(zipfile_path, common_dir)
+
+
+
+
+#
+# Send results by mail
+#
+puts 'sending mail'
 
 Mail.deliver do
   from     email_address

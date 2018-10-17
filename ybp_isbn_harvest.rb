@@ -1,12 +1,13 @@
+#!/usr/bin/env ruby
 require 'fileutils'
 require 'set'
 require 'mail'
 require 'zip'
 require 'csv'
-load '../postgres_connect/connect.rb'
+require_relative '../postgres_connect/connect.rb'
 
 
-WORKDIR = 'data'
+WORKDIR = File.join(__dir__, 'data')
 EBOOK_BNUMS_PATH = File.join(WORKDIR, 'ebook_bnums_results.txt')
 ALL_ISBNS_PATH = File.join(WORKDIR, 'all_isbns_results.txt')
 YBP_VENDOR_PATH = File.join(WORKDIR, 'ybp_vendor_isbns_results.txt')
@@ -17,7 +18,15 @@ comp_new_path = File.join(WORKDIR, 'comprehensive_new.txt')
 comp_old_path = File.join(WORKDIR, 'comprehensive_old.txt')
 adds_path = File.join(WORKDIR, 'UNC-3030_ADDS_holdings_load.txt')
 deletes_path = File.join(WORKDIR, 'UNC-3030_DELETES_holdings_load.txt')
-common_dir = 'H:/GOBI Library Solutions/archive/'
+
+common_symlink = '/mnt/ybp_holdings_load/'
+common_dir =
+  if File.directory?(common_symlink)
+    common_symlink
+  else
+    '\\\\ad.unc.edu\\lib\\common\\GOBI Library Solutions\\archive\\'
+  end
+
 
 # Set mail defaults, grab email address from postgres_connect
 #
@@ -63,13 +72,13 @@ end
 
 def run_queries()
     puts 'ebook_bnums'
-    load 'ebook_bnums.rb'
+    load File.join(__dir__, 'ebook_bnums.rb')
     puts 'all_isbns'
-    load 'all_isbns.rb'
+    load File.join(__dir__, 'all_isbns.rb')
     puts 'ybp_ecolls_isbns'
-    load 'ybp_ecolls_isbns.rb'
+    load File.join(__dir__, 'ybp_ecolls_isbns.rb')
     puts 'ybp_vendor_isbns'
-    load 'ybp_vendor_isbns.rb'
+    load File.join(__dir__, 'ybp_vendor_isbns.rb')
     puts "\n"
 end
 
@@ -115,7 +124,7 @@ File.foreach(ALL_ISBNS_PATH) do |line|
   # skip if we just wrote an a_isbn from this record
   # this saves us from the e_bnums binary search.
   elsif wrote_a == bnum
-    
+
   # write if: we just wrote a z_isbn from this record
   # or it's an ecoll record that we have not already seen with an a_isbn
   elsif wrote_z == bnum || e_bnums.bsearch { |x| bnum <=> x }
@@ -255,9 +264,8 @@ EOT
 puts mailbody
 File.write('run_stats.txt', mailbody)
 
-
 file_timestamp = Time.now.strftime("%F_%H%M%S")
-zipfile_path =  File.join(WORKDIR, "load_#{file_timestamp}.zip")
+zipfile_path = File.join(WORKDIR, "load_#{file_timestamp}.zip")
 Zip::File.open(zipfile_path, Zip::File::CREATE) do |zipfile|
   zipfile.add('UNC-3030_ADDS_holdings_load.txt', adds_path)
   zipfile.add('UNC-3030_DELETES_holdings_load.txt', deletes_path)
@@ -272,10 +280,6 @@ end
 
 FileUtils.mv(comp_path, comp_old_path)
 FileUtils.mv(comp_new_path, comp_path)
-FileUtils.cp(zipfile_path, common_dir)
-
-
-
 
 #
 # Send results by mail
@@ -292,3 +296,5 @@ Mail.deliver do
     add_file filename if File.size?(filename)
   end
 end
+
+FileUtils.cp(zipfile_path, common_dir)

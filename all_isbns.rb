@@ -1,7 +1,7 @@
-load '../postgres_connect/connect.rb'
+require_relative '../postgres_connect/connect.rb'
 
 c = Connect.new
-c.make_query('all_isbns.sql')
+c.make_query(File.join(__dir__, 'all_isbns.sql'))
 if defined?(ALL_ISBNS_PATH)
   c.write_results(ALL_ISBNS_PATH, include_headers: false)
 else

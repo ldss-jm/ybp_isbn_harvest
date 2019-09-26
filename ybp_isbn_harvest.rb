@@ -115,7 +115,7 @@ z_isbns = Set.new()
 File.foreach(ALL_ISBNS_PATH) do |line|
   stat_isbns_found += 1
   bnum, tag, isbn = line.split("\t")
-  isbn_normalized = normalize_isbn(isbn)
+  isbn_normalized = ISBN.normalize_isbn(isbn)
   stat_invalid_isbns += 1 unless isbn_normalized
   if tag == 'a'
     a_isbns << isbn_normalized
@@ -167,7 +167,7 @@ ybp_vendor_isbns = nil
 ybp_ecolls_isbns = nil
 
 
-exclude_isbns.map! { |x| strip_isbn(x) }
+exclude_isbns.map! { |x| ISBN.strip_isbn(x) }
 exclude_isbns = exclude_isbns.compact.uniq
 exclude_isbns.sort!
 stat_ybp_isbns_to_exclude = exclude_isbns.length

@@ -21,7 +21,11 @@ task :new_harvest do
   YBPHoldingsService::Harvest.new(new_harvest: true).execute
 end
 
-desc 'Noty implemented - Compare YBP ISBN holdings to our own to find adds/deletes'
+desc 'Compare YBP ISBN holdings to our own to find adds/deletes'
 task :audit do
-  # todo
+  sh 'sort data/comprehensive.txt > data/comp_srt.audit'
+  sh 'grep "|\\(EBOOK\\|UNC\\)_LOAD|" data/holdings.txt | sort > data/ybp_srt.audit'
+  sh 'comm -13 data/comp_srt.audit data/ybp_srt.audit > data/UNC-3030_DELETES_audit_holdings_load.txt'
+  sh 'comm -23 data/comp_srt.audit data/ybp_srt.audit > data/UNC-3030_ADDS_audit_holdings_load.txt'
+  sh 'rm data/*.audit'
 end

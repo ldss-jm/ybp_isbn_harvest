@@ -189,9 +189,12 @@ module YBPHoldingsService
 
     def write_comprehensive(a_isbns, z_isbns)
       acct_no = "#{@inst::GOBI_ACCOUNT_NO}99"
+
       File.open(paths::COMPREHENSIVE_NEW, 'w') do |file|
         {unc_load: a_isbns, ebook_load: z_isbns}.each do |tag, isbns|
-          isbns.each { |isbn| file << "#{isbn}|#{tag}|#{acct_no}\n"}
+          # ybp will upcase the fundcode values, so we should explicitly
+          # upcase them.
+          isbns.each { |isbn| file << "#{isbn}|#{tag.upcase}|#{acct_no}\n"}
         end
       end
     end
@@ -373,17 +376,7 @@ module YBPHoldingsService
 
   module ISBN
     def self.normalize_isbn(isbn_subfield_string)
-      # We don't want to use StdNum::ISBN.normalize which would also
-      # convert 10 digit ISBN's to 13 digit. YBP stores all ISBNs as ISBN-13s,
-      # so once the next yearly reconciliation occurs, we can covert our
-      # comprehensive list to all ISBN-13 and use that for the reconciliation.
-      #
-      # Similarly: at that reconciliation we can also stop sending them invalid
-      # ISBNs
-      isbn = StdNum::ISBN.reduce_to_basics(isbn_subfield_string, [10, 13])
-
-      # uncommentable at next reconciliation
-      # return isbn if StdNum::ISBN.valid?(isbn)
+      StdNum::ISBN.normalize(isbn_subfield_string)
     end
   end
 end

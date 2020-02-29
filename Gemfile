@@ -6,7 +6,7 @@ gem 'sierra_postgres_utilities', github: 'UNC-Libraries/sierra-postgres-utilitie
 
 gem 'library_stdnums', '~> 1.6.0'
 gem 'mail', '~> 2.6'
-gem 'rake', '~> 10.0'
+gem 'rake', '~> 12.3'
 gem 'rubyzip', '~> 1.2.4'
 
 group :development do

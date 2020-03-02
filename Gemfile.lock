@@ -23,8 +23,9 @@ GEM
       scrub_rb (>= 1.0.1, < 2)
       unf
     mini_mime (1.0.2)
+    pg (1.1.4)
     pg (1.1.4-x64-mingw32)
-    rake (10.5.0)
+    rake (12.3.3)
     rspec (3.8.0)
       rspec-core (~> 3.8.0)
       rspec-expectations (~> 3.8.0)
@@ -46,13 +47,14 @@ GEM
     unf_ext (0.0.7.6)
 
 PLATFORMS
+  ruby
   x64-mingw32
 
 DEPENDENCIES
   bundler (~> 2.0)
   library_stdnums (~> 1.6.0)
   mail (~> 2.6)
-  rake (~> 10.0)
+  rake (~> 12.3)
   rspec (~> 3.0)
   rubyzip (~> 1.2.4)
   sierra_postgres_utilities!

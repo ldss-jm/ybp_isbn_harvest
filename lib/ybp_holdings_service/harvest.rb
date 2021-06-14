@@ -305,8 +305,16 @@ module YBPHoldingsService
       end
 
       def self.query(sql_file, outpath)
-        Sierra::DB.query(File.read(File.join(__dir__, 'queries', sql_file)))
-        Sierra::DB.write_results(outpath, include_headers: false)
+        retried = false
+        begin
+          Sierra::DB.query(File.read(File.join(__dir__, 'queries', sql_file)))
+          Sierra::DB.write_results(outpath, include_headers: false)
+        rescue PG::QueryCanceled, Sequel::DatabaseError => e
+          raise e if retried
+
+          retried = true
+          retry
+        end
       end
 
       # Ebook record ids -- acceptable to use 020|z if there is no 020|a

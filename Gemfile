@@ -1,7 +1,5 @@
 source 'https://rubygems.org'
 
-ruby '~> 2.3'
-
 gem 'sierra_postgres_utilities', github: 'UNC-Libraries/sierra-postgres-utilities'
 
 gem 'library_stdnums', '~> 1.6.0'

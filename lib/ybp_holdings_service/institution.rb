@@ -1,13 +1,23 @@
 module YBPHoldingsService
   # Institutional data
   module Institution
-    ABBR = 'UNC'
-    GOBI_ACCOUNT_NO = '3030'
-    EMAIL_ADDRESS = 'eres_cat@unc.edu'
-    SMTP_ADDRESS = 'relay.unc.edu'
+    ABBR = 'UNC'.freeze
+    GOBI_ACCOUNT_NO = '3030'.freeze
+    EMAIL_ADDRESS = 'eres_cat@unc.edu'.freeze
+    SMTP_ADDRESS = 'relay.unc.edu'.freeze
     SMTP_PORT = 25
 
-    ACCT_TAG = "#{ABBR}-#{GOBI_ACCOUNT_NO}"
+    ACCT_TAG = "#{ABBR}-#{GOBI_ACCOUNT_NO}".freeze
+
+    EMAIL_SUBJECT = 'Holdings Load Service - UNC-3030 and UNC-4040'.freeze
+    EMAIL_BODY_PREFACE = <<~TXT.freeze
+      Attached are add/delete file(s) of ISBNs for the Holdings Load Service, UNC
+      accounts UNC-3030 and UNC-4040. Please apply these files to both accounts.
+
+      Please add the ISBNs in the add file to our holdings load data and
+      delete any ISBNs in the delete file from our holdings load data.
+      Thanks!\n
+    TXT
 
     # Paths for result files
     module Paths

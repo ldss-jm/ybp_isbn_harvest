@@ -223,16 +223,16 @@ module YBPHoldingsService
     end
 
     def email_subject
-      "#{@inst::ACCT_TAG} Holdings Load Service"
+      @inst::EMAIL_SUBJECT || "#{@inst::ACCT_TAG} Holdings Load Service"
     end
 
     def email_body_preface
-      <<~TXT
+      @inst::EMAIL_BODY_PREFACE || <<~TXT
         Attached are add/delete file(s) of ISBNs for the Holdings Load Service,
         #{@inst::ABBR} account #{@inst::GOBI_ACCOUNT_NO}.
 
-        Please add the ISBNs in the add file to our holdings load data, and
-        please delete any ISBNs in the delete file from our holdings load data.
+        Please add the ISBNs in the add file to our holdings load data and
+        delete any ISBNs in the delete file from our holdings load data.
         Thanks!\n
       TXT
     end
@@ -313,6 +313,7 @@ module YBPHoldingsService
           raise e if retried
 
           retried = true
+          sleep 20
           retry
         end
       end

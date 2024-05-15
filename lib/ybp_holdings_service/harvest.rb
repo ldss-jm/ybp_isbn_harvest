@@ -78,6 +78,7 @@ module YBPHoldingsService
     end
 
     def process_all_isbns
+      process_raw_isbns(paths::RAW_ALL_ISBNS)
       # normalize and split by subfield
       # result in an a_isbns
       # and a z_isbns with any a_isbn removed
@@ -91,7 +92,7 @@ module YBPHoldingsService
 
       e_bnums = non_ybp_ebook_rec_ids
 
-      File.foreach(paths::ALL_ISBNS, chomp: true) do |line|
+      File.foreach(paths::PROCESSED_ALL_ISBNS, chomp: true) do |line|
         isbn_count += 1
         bnum, tag, isbn = line.split("\t")
         isbn_normalized = ISBN.normalize_isbn(isbn)
@@ -121,6 +122,42 @@ module YBPHoldingsService
       write_stats('invalid', invalid_isbn_count)
 
       [a_isbns, z_isbns]
+    end
+
+    # Takes raw SQL output (with rows of record_id and field_content)
+    # and produces subfield based rows (of record_id, subfield_code,
+    # subfield_content). Only |a and |z subfields are retained.
+    # Rows containing no a/z subfields end up removed entirely; rows containing
+    # multiple a/z subfields are split into multiple rows.
+    #
+    # Expects input sorted by record_id. Returns output sorted by record_id then
+    # subfield_tag, which is required for later |z handling.
+    def process_raw_isbns(infile, outfile = paths::PROCESSED_ALL_ISBNS)
+      File.open(outfile, 'w', universal_newline: true) do |ofile|
+        current_record = nil
+        current_record_data = []
+        File.foreach(infile, chomp: true) do |line|
+          id, isbns = line.split("\t")
+
+          if id != current_record
+            # flush sorted array to file
+            # It's essential to sort here (by id, tag). When we read the isbns
+            # we sometimes only use |z isbns when there are no |a isbns for a record,
+            # and for that we expect sorted input.
+            current_record_data.sort.each do |tag, isbn|
+              ofile << "#{id}\t#{tag}\t#{isbn}\n"
+            end
+            current_record_data = []
+            # set id as current_record
+            current_record = id
+          end
+          # append matches to record array
+          matches = isbns.scan(/\|([az])([^\|]*)/)
+          next unless matches.any?
+
+          current_record_data += matches
+        end
+      end
     end
 
     def non_ybp_ebook_rec_ids
@@ -208,7 +245,7 @@ module YBPHoldingsService
         zipfile.add(File.basename(paths::COMPREHENSIVE_NEW), paths::COMPREHENSIVE_NEW)
         zipfile.add('comprehensive_prev.txt', paths::COMPREHENSIVE)
         zipfile.add(File.basename(paths::EBOOK_BNUMS), paths::EBOOK_BNUMS)
-        zipfile.add(File.basename(paths::ALL_ISBNS), paths::ALL_ISBNS)
+        zipfile.add(File.basename(paths::RAW_ALL_ISBNS), paths::RAW_ALL_ISBNS)
         zipfile.add(File.basename(paths::YBP_VENDOR), paths::YBP_VENDOR)
         zipfile.add(File.basename(paths::YBP_ECOLLS), paths::YBP_ECOLLS)
         zipfile.add(File.basename(paths::STAT_SUMMARY), paths::STAT_SUMMARY)
@@ -299,7 +336,7 @@ module YBPHoldingsService
 
       def run_queries
         Queries.query_non_ybp_ebook_ids(@paths::EBOOK_BNUMS)
-        Queries.query_all_isbns(@paths::ALL_ISBNS)
+        Queries.query_all_isbns(@paths::RAW_ALL_ISBNS)
         Queries.query_ybp_ecolls(@paths::YBP_ECOLLS)
         Queries.query_ybp_vendor(@paths::YBP_VENDOR)
       end

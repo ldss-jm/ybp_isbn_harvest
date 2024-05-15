@@ -1,8 +1,7 @@
-SELECT sf.content as isbn, v.field_content as coll
+SELECT phe.index_entry as isbn, v.field_content as coll
 FROM sierra_view.varfield v
-INNER JOIN sierra_view.subfield sf on sf.record_id = v.record_id
-    and sf.marc_tag = '020'
-    and sf.tag = 'a'
+INNER JOIN sierra_view.phrase_entry phe on phe.record_id = v.record_id
+  and phe.index_tag = 'i' and phe.phrase_rule_operation = 'K'
 WHERE v.marc_tag = '773'
     --changes to statement below need to also be reflected on ebook_bnums.sql
     and (v.field_content ilike '%title-by-title%'

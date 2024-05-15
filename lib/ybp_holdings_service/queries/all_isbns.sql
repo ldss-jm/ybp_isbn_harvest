@@ -10,11 +10,10 @@ WITH excluded AS (
        inner join sierra_view.bib_record_item_record_link bil on bil.item_record_id = i.id
        where i.location_code = 'uadai'
     )
-select sf.record_id, sf.tag, sf.content
+select b.id, v.field_content
 from sierra_view.bib_record b
 inner join sierra_view.record_metadata rm on rm.id = b.id
-inner join sierra_view.subfield sf on sf.record_id = b.id
-  and sf.marc_tag = '020' and sf.tag in ('a', 'z')
+inner join sierra_view.varfield v on v.record_id = b.id and v.marc_tag = '020'
 where b.bcode3 != 'n'
       and (
             rm.creation_date_gmt < (localtimestamp - interval '30 days')
@@ -29,6 +28,6 @@ where b.bcode3 != 'n'
           )
       and NOT EXISTS (select *
                       from excluded
-                      where excluded.bib_id = sf.record_id)
+                      where excluded.bib_id = v.record_id)
 -- sorted input is needed by script to discard |z isbns appropriately
-order by b.id, sf.tag
+order by b.id

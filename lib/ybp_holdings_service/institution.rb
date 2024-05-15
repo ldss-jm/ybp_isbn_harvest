@@ -23,7 +23,8 @@ module YBPHoldingsService
     module Paths
       WORKDIR = File.join(__dir__, '..', '..', 'data')
       EBOOK_BNUMS = File.join(WORKDIR, 'results_non_ypb_ebook_ids.txt')
-      ALL_ISBNS = File.join(WORKDIR, 'results_all_isbns.txt')
+      RAW_ALL_ISBNS = File.join(WORKDIR, 'results_raw_all_isbns.txt')
+      PROCESSED_ALL_ISBNS = File.join(WORKDIR, 'results_all_isbns.txt')
       YBP_VENDOR = File.join(WORKDIR, 'results_ybp_vendor.txt')
       YBP_ECOLLS = File.join(WORKDIR, 'results_ybp_ecolls.txt')
       MANUAL_EXCLUDES = File.join(WORKDIR, 'EXCLUDES_gobi.txt')

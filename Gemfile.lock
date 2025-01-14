@@ -27,7 +27,7 @@ GEM
     pg (1.5.4)
     pg (1.5.4-x64-mingw32)
     rake (12.3.3)
-    rexml (3.2.6)
+    rexml (3.4.0)
     rspec (3.8.0)
       rspec-core (~> 3.8.0)
       rspec-expectations (~> 3.8.0)

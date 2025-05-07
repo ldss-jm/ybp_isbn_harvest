@@ -64,8 +64,6 @@ module YBPHoldingsService
       archive_files
       mailer.send_mail(email_address, email_subject, email_body,
                        [paths.adds, paths.deletes])
-
-      FileUtils.cp(@zipfile_path, paths.common_dir)
     end
 
     def az_stats(a_isbns, z_isbns, pre_exclusions_lengths)
@@ -238,8 +236,8 @@ module YBPHoldingsService
 
     def archive_files
       file_timestamp = Time.now.strftime('%F_%H%M%S')
-      @zipfile_path = File.join(paths::WORKDIR, "load_#{file_timestamp}.zip")
-      Zip::File.open(@zipfile_path, Zip::File::CREATE) do |zipfile|
+      zipfile_path = File.join(paths::WORKDIR, "load_#{file_timestamp}.zip")
+      Zip::File.open(zipfile_path, Zip::File::CREATE) do |zipfile|
         zipfile.add(File.basename(paths.adds), paths.adds)
         zipfile.add(File.basename(paths.deletes), paths.deletes)
         zipfile.add(File.basename(paths::COMPREHENSIVE_NEW), paths::COMPREHENSIVE_NEW)

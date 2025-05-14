@@ -40,18 +40,6 @@ module YBPHoldingsService
       def self.deletes
         File.join(WORKDIR, "#{ACCT_TAG}_DELETES_holdings_load.txt")
       end
-
-      COMMON_SYMLINK = '/mnt/ybp_holdings_load/'
-      COMMON_FILEPATH = '\\\\ad.unc.edu\\lib\\common\\GOBI Library Solutions\\archive\\'
-
-      # Path where archival zip file is copied.
-      def self.common_dir
-        if File.directory?(Paths::COMMON_SYMLINK)
-          Paths::COMMON_SYMLINK
-        else
-          Paths::COMMON_FILEPATH
-        end
-      end
     end
   end
 end

@@ -143,7 +143,7 @@ module YBPHoldingsService
             # we sometimes only use |z isbns when there are no |a isbns for a record,
             # and for that we expect sorted input.
             current_record_data.sort.each do |tag, isbn|
-              ofile << "#{id}\t#{tag}\t#{isbn}\n"
+              ofile << "#{current_record}\t#{tag}\t#{isbn}\n"
             end
             current_record_data = []
             # set id as current_record
@@ -154,6 +154,9 @@ module YBPHoldingsService
           next unless matches.any?
 
           current_record_data += matches
+        end
+        current_record_data.sort.each do |tag, isbn|
+          ofile << "#{current_record}\t#{tag}\t#{isbn}\n"
         end
       end
     end

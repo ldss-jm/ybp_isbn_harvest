@@ -240,7 +240,7 @@ module YBPHoldingsService
     def archive_files
       file_timestamp = Time.now.strftime('%F_%H%M%S')
       zipfile_path = File.join(paths::WORKDIR, "load_#{file_timestamp}.zip")
-      Zip::File.open(zipfile_path, Zip::File::CREATE) do |zipfile|
+      Zip::File.open(zipfile_path, create: true) do |zipfile|
         zipfile.add(File.basename(paths.adds), paths.adds)
         zipfile.add(File.basename(paths.deletes), paths.deletes)
         zipfile.add(File.basename(paths::COMPREHENSIVE_NEW), paths::COMPREHENSIVE_NEW)

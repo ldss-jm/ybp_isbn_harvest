@@ -244,7 +244,9 @@ module YBPHoldingsService
         zipfile.add(File.basename(paths.adds), paths.adds)
         zipfile.add(File.basename(paths.deletes), paths.deletes)
         zipfile.add(File.basename(paths::COMPREHENSIVE_NEW), paths::COMPREHENSIVE_NEW)
-        zipfile.add('comprehensive_prev.txt', paths::COMPREHENSIVE)
+        if File.exist?(paths::COMPREHENSIVE)
+          zipfile.add('comprehensive_prev.txt', paths::COMPREHENSIVE)
+        end
         zipfile.add(File.basename(paths::EBOOK_BNUMS), paths::EBOOK_BNUMS)
         zipfile.add(File.basename(paths::RAW_ALL_ISBNS), paths::RAW_ALL_ISBNS)
         zipfile.add(File.basename(paths::YBP_VENDOR), paths::YBP_VENDOR)
@@ -252,7 +254,9 @@ module YBPHoldingsService
         zipfile.add(File.basename(paths::STAT_SUMMARY), paths::STAT_SUMMARY)
       end
 
-      FileUtils.mv(paths::COMPREHENSIVE, paths::COMPREHENSIVE_OLD)
+      if File.exist?(paths::COMPREHENSIVE)
+        FileUtils.mv(paths::COMPREHENSIVE, paths::COMPREHENSIVE_OLD)
+      end
       FileUtils.mv(paths::COMPREHENSIVE_NEW, paths::COMPREHENSIVE)
     end
 

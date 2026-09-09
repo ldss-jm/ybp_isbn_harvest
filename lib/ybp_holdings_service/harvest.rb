@@ -307,6 +307,8 @@ module YBPHoldingsService
 
     class Mailer
       def initialize(smtp_address:, smtp_port:)
+        require 'mail'
+
         smtp = {address: smtp_address, port: smtp_port}
         @smtp = smtp
 
@@ -340,6 +342,8 @@ module YBPHoldingsService
       end
 
       def self.query(sql_file, outpath)
+        require 'sierra_postgres_utilities'
+
         retried = false
         begin
           Sierra::DB.query(File.read(File.join(__dir__, 'queries', sql_file)))

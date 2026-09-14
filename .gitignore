@@ -1,0 +1,5 @@
+.DS_Store
+*.secret
+/data/*
+!/data/.keep
+!/data/EXCLUDES_gobi.txt

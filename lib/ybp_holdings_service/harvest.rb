@@ -143,7 +143,7 @@ module YBPHoldingsService
             # we sometimes only use |z isbns when there are no |a isbns for a record,
             # and for that we expect sorted input.
             current_record_data.sort.each do |tag, isbn|
-              ofile << "#{id}\t#{tag}\t#{isbn}\n"
+              ofile << "#{current_record}\t#{tag}\t#{isbn}\n"
             end
             current_record_data = []
             # set id as current_record
@@ -154,6 +154,9 @@ module YBPHoldingsService
           next unless matches.any?
 
           current_record_data += matches
+        end
+        current_record_data.sort.each do |tag, isbn|
+          ofile << "#{current_record}\t#{tag}\t#{isbn}\n"
         end
       end
     end
@@ -237,11 +240,13 @@ module YBPHoldingsService
     def archive_files
       file_timestamp = Time.now.strftime('%F_%H%M%S')
       zipfile_path = File.join(paths::WORKDIR, "load_#{file_timestamp}.zip")
-      Zip::File.open(zipfile_path, Zip::File::CREATE) do |zipfile|
+      Zip::File.open(zipfile_path, create: true) do |zipfile|
         zipfile.add(File.basename(paths.adds), paths.adds)
         zipfile.add(File.basename(paths.deletes), paths.deletes)
         zipfile.add(File.basename(paths::COMPREHENSIVE_NEW), paths::COMPREHENSIVE_NEW)
-        zipfile.add('comprehensive_prev.txt', paths::COMPREHENSIVE)
+        if File.exist?(paths::COMPREHENSIVE)
+          zipfile.add('comprehensive_prev.txt', paths::COMPREHENSIVE)
+        end
         zipfile.add(File.basename(paths::EBOOK_BNUMS), paths::EBOOK_BNUMS)
         zipfile.add(File.basename(paths::RAW_ALL_ISBNS), paths::RAW_ALL_ISBNS)
         zipfile.add(File.basename(paths::YBP_VENDOR), paths::YBP_VENDOR)
@@ -249,7 +254,9 @@ module YBPHoldingsService
         zipfile.add(File.basename(paths::STAT_SUMMARY), paths::STAT_SUMMARY)
       end
 
-      FileUtils.mv(paths::COMPREHENSIVE, paths::COMPREHENSIVE_OLD)
+      if File.exist?(paths::COMPREHENSIVE)
+        FileUtils.mv(paths::COMPREHENSIVE, paths::COMPREHENSIVE_OLD)
+      end
       FileUtils.mv(paths::COMPREHENSIVE_NEW, paths::COMPREHENSIVE)
     end
 
@@ -307,6 +314,8 @@ module YBPHoldingsService
 
     class Mailer
       def initialize(smtp_address:, smtp_port:)
+        require 'mail'
+
         smtp = {address: smtp_address, port: smtp_port}
         @smtp = smtp
 
@@ -340,6 +349,8 @@ module YBPHoldingsService
       end
 
       def self.query(sql_file, outpath)
+        require 'sierra_postgres_utilities'
+
         retried = false
         begin
           Sierra::DB.query(File.read(File.join(__dir__, 'queries', sql_file)))

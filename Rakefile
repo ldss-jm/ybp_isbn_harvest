@@ -1,6 +1,5 @@
-require 'rspec/core/rake_task'
 require 'rake/clean'
-require_relative 'lib/ybp_holdings_service'
+require 'rspec/core/rake_task'
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -8,16 +7,19 @@ task :default => :spec
 
 desc 'Harvest ISBNs to send to YBP as adds/deletes'
 task :harvest do
+  require_relative 'lib/ybp_holdings_service'
   YBPHoldingsService::Harvest.new.execute
 end
 
 desc 'Harvest ISBNs USING EXISTING QUERY DATA'
 task :queryless_harvest do
+  require_relative 'lib/ybp_holdings_service'
   YBPHoldingsService::Harvest.new(use_existing_query_data: true).execute
 end
 
 desc 'Run a full/new harvest; presumes YBP Holdings data is empty'
 task :new_harvest do
+  require_relative 'lib/ybp_holdings_service'
   YBPHoldingsService::Harvest.new(new_harvest: true).execute
 end
 
